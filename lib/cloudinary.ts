@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 interface CloudinarySignParams {
   timestamp: number;
@@ -15,4 +15,13 @@ export function createCloudinarySignature(params: CloudinarySignParams, apiSecre
   const payload = payloadParts.join("&");
 
   return createHash("sha1").update(`${payload}${apiSecret}`).digest("hex");
+}
+
+export function verifyRazorpayWebhookSignature(
+  payload: string,
+  signature: string,
+  webhookSecret: string,
+): boolean {
+  const expectedSignature = createHmac("sha256", webhookSecret).update(payload).digest("hex");
+  return signature === expectedSignature;
 }

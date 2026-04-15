@@ -31,7 +31,7 @@ export default function Footer() {
             {
               label: "Admin",
               links: [
-                { label: "Dashboard", href: "/admin-dashboard" },
+                { label: "Dashboard", href: "/admin" },
                 { label: "Orders", href: "/order-management" },
                 { label: "Inventory", href: "/product-management" },
               ],

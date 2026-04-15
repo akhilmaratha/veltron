@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import BottomNavBar from "@/components/bottom-nav-bar";
 import Footer from "@/components/footer";
@@ -29,6 +29,7 @@ type CreateOrderResponse = {
   currency: string;
   keyId: string;
   customer?: { name: string; email: string };
+  checkoutValues: CheckoutFormValues;
 };
 
 const loadRazorpayScript = async () => {
@@ -59,7 +60,7 @@ export default function CheckoutPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutFormSchema),
@@ -75,7 +76,10 @@ export default function CheckoutPage() {
     },
   });
 
-  const selectedShipping = watch("shippingMethod");
+  const selectedShipping = useWatch({
+    control,
+    name: "shippingMethod",
+  });
 
   const checkoutMutation = useMutation({
     mutationFn: async (values: CheckoutFormValues) => {
@@ -118,6 +122,7 @@ export default function CheckoutPage() {
         currency: payload.currency,
         keyId: payload.keyId,
         customer: payload.customer,
+        checkoutValues: values,
       } satisfies CreateOrderResponse;
     },
     onSuccess: async (orderPayload) => {
@@ -150,15 +155,15 @@ export default function CheckoutPage() {
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
-                shippingMethod: watch("shippingMethod"),
+                shippingMethod: orderPayload.checkoutValues.shippingMethod,
                 customer: {
-                  firstName: watch("firstName"),
-                  lastName: watch("lastName"),
-                  email: watch("email"),
-                  address: watch("address"),
-                  city: watch("city"),
-                  postalCode: watch("postalCode"),
-                  country: watch("country"),
+                  firstName: orderPayload.checkoutValues.firstName,
+                  lastName: orderPayload.checkoutValues.lastName,
+                  email: orderPayload.checkoutValues.email,
+                  address: orderPayload.checkoutValues.address,
+                  city: orderPayload.checkoutValues.city,
+                  postalCode: orderPayload.checkoutValues.postalCode,
+                  country: orderPayload.checkoutValues.country,
                 },
                 items: effectiveCartItems,
               }),

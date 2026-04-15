@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type { CartItemData } from "@/types/commerce";
 
 interface CartSummaryProps {
@@ -20,10 +23,20 @@ export default function CartSummary({
   isCheckoutLoading = false,
   checkoutError = null,
 }: CartSummaryProps) {
+  const router = useRouter();
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
   const shipping = subtotal > 300 ? 0 : 12;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
+
+  const handleCheckout = () => {
+    if (onCheckout) {
+      onCheckout();
+      return;
+    }
+
+    router.push("/checkout");
+  };
 
   return (
     <aside className="rounded-lg bg-surface p-6 md:p-8">
@@ -76,7 +89,7 @@ export default function CartSummary({
       {showCheckoutButton ? (
         <button
           type="button"
-          onClick={onCheckout}
+          onClick={handleCheckout}
           disabled={isCheckoutLoading || items.length === 0}
           className="mt-8 w-full rounded-md bg-primary px-5 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-background transition hover:bg-primary/90"
         >

@@ -21,7 +21,7 @@ export interface PersistedOrder {
   shippingMethod: ShippingMethod;
   customer: CheckoutCustomer;
   items: CartItemData[];
-  status: "paid" | "failed" | "refunded";
+  status: PaymentStatus;
   createdAt: string;
 }
 

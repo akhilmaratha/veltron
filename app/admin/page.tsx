@@ -10,9 +10,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <NavigationDrawer activeHref="/admin-dashboard" />
+      <NavigationDrawer activeHref="/admin" />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopAppBar activeHref="/admin-dashboard" showNavigation={false} title="Veltron" />
+        <TopAppBar activeHref="/admin" showNavigation={false} title="Veltron" />
         <main className="flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-12">
           <div className="mx-auto max-w-7xl">
             <section className="mb-12">
@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
           </div>
         </main>
       </div>
-      <BottomNavBar activeHref="/admin-dashboard" />
+      <BottomNavBar activeHref="/admin" />
     </div>
   );
 }

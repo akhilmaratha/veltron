@@ -2,7 +2,8 @@ import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { verifyUser } from "@/lib/auth-store";
+import { prisma } from "@/lib/prisma";
+import { verifyPassword } from "@/lib/password";
 import { loginSchema } from "@/lib/validators/auth";
 
 const baseProviders: NextAuthOptions["providers"] = [
@@ -19,17 +20,25 @@ const baseProviders: NextAuthOptions["providers"] = [
         return null;
       }
 
-      const user = verifyUser(parsed.data.email, parsed.data.password);
+      const user = await prisma.user.findUnique({
+        where: { email: parsed.data.email },
+      });
 
-      if (!user) {
+      if (!user || !user.passwordHash) {
+        return null;
+      }
+
+      const isPasswordValid = await verifyPassword(parsed.data.password, user.passwordHash);
+
+      if (!isPasswordValid) {
         return null;
       }
 
       return {
         id: user.id,
         email: user.email,
-        name: user.name,
-        role: user.role,
+        name: user.name ?? undefined,
+        role: (user.role === "admin" ? "admin" : "customer") as "admin" | "customer",
       };
     },
   }),
@@ -40,6 +49,37 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      async profile(profile) {
+        const email = profile.email ?? "";
+        const user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user) {
+          const newUser = await prisma.user.create({
+            data: {
+              email,
+              name: profile.name ?? profile.email ?? undefined,
+              provider: "google",
+              role: "customer",
+            },
+          });
+
+          return {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            role: "customer" as const,
+          };
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: (user.role === "admin" ? "admin" : "customer") as "admin" | "customer",
+        };
+      },
     }),
   );
 }

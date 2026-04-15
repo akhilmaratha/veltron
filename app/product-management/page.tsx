@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 import NavigationDrawer from "@/components/navigation-drawer";
 import BottomNavBar from "@/components/bottom-nav-bar";
 import TopAppBar from "@/components/top-app-bar";
@@ -86,6 +86,9 @@ export default function ProductManagementPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [productMessage, setProductMessage] = useState<string | null>(null);
   const [productSubmitting, setProductSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<Partial<ProductRow> | null>(null);
+  const [deleteDeleting, setDeleteDeleting] = useState<string | null>(null);
   const [productForm, setProductForm] = useState({
     name: "",
     sku: "",
@@ -291,6 +294,94 @@ export default function ProductManagementPage() {
     }
   };
 
+  const updateProduct = async (productId: string) => {
+    if (!editingData) return;
+
+    try {
+      setProductSubmitting(true);
+      setProductMessage(null);
+
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: editingData.name,
+          sku: editingData.sku,
+          category: editingData.category,
+          price: editingData.price,
+          stock: editingData.stock,
+          imageUrl: editingData.image,
+          description: "",
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        id?: string;
+        name?: string;
+        sku?: string;
+        category?: string;
+        price?: number;
+        stock?: number;
+        image?: string;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Unable to update product.");
+      }
+
+      setInventoryItems((current) =>
+        current.map((item) =>
+          item.id === productId
+            ? {
+                ...item,
+                name: payload.name ?? item.name,
+                sku: payload.sku ?? item.sku,
+                category: payload.category ?? item.category,
+                price: payload.price ?? item.price,
+                stock: payload.stock ?? item.stock,
+                image: payload.image ?? item.image,
+              }
+            : item,
+        ),
+      );
+
+      setProductMessage("Product updated successfully.");
+      setEditingId(null);
+      setEditingData(null);
+    } catch (error) {
+      setProductMessage(error instanceof Error ? error.message : "Unable to update product.");
+    } finally {
+      setProductSubmitting(false);
+    }
+  };
+
+  const deleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      setDeleteDeleting(productId);
+
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        throw new Error(payload.message ?? "Unable to delete product.");
+      }
+
+      setInventoryItems((current) => current.filter((item) => item.id !== productId));
+      setProductMessage("Product deleted successfully.");
+    } catch (error) {
+      setProductMessage(error instanceof Error ? error.message : "Unable to delete product.");
+    } finally {
+      setDeleteDeleting(null);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <NavigationDrawer activeHref="/product-management" />
@@ -463,6 +554,7 @@ export default function ProductManagementPage() {
                       <th className="pb-4 pr-4 font-semibold">Price</th>
                       <th className="pb-4 pr-4 font-semibold">Stock</th>
                       <th className="pb-4 pr-4 font-semibold">Status</th>
+                      <th className="pb-4 pr-4 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -473,7 +565,16 @@ export default function ProductManagementPage() {
                             <div className="relative h-12 w-12 overflow-hidden rounded bg-surface">
                               <Image src={item.image} alt={item.name} fill sizes="48px" className="object-cover" />
                             </div>
-                            <span className="font-medium text-text-primary">{item.name}</span>
+                            {editingId === item.id ? (
+                              <input
+                                type="text"
+                                value={editingData?.name ?? item.name}
+                                onChange={(e) => setEditingData((prev) => ({ ...prev, name: e.target.value }))}
+                                className="rounded border border-border bg-surface px-2 py-1 text-sm"
+                              />
+                            ) : (
+                              <span className="font-medium text-text-primary">{item.name}</span>
+                            )}
                           </div>
                         </td>
                         <td className="py-4 pr-4 text-text-muted">{item.sku}</td>
@@ -484,6 +585,51 @@ export default function ProductManagementPage() {
                           <StatusBadge
                             status={item.stock === 0 ? "Out of stock" : item.stock < 10 ? "Low stock" : "Active"}
                           />
+                        </td>
+                        <td className="py-4 pr-4 flex items-center gap-2">
+                          {editingId === item.id ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  void updateProduct(item.id);
+                                }}
+                                disabled={productSubmitting}
+                                className="rounded bg-primary px-2 py-1 text-xs text-background hover:bg-primary/90 disabled:opacity-60"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingId(null);
+                                  setEditingData(null);
+                                }}
+                                className="rounded border border-border px-2 py-1 text-xs hover:bg-surface"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingId(item.id);
+                                  setEditingData({ ...item });
+                                }}
+                                className="rounded border border-border p-1 text-text-muted hover:bg-surface"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  void deleteProduct(item.id);
+                                }}
+                                disabled={deleteDeleting === item.id}
+                                className="rounded border border-danger p-1 text-danger hover:bg-danger/10 disabled:opacity-60"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -13,9 +13,41 @@ enum ShippingMethod {
 }
 
 enum PaymentStatus {
+  pending
   paid
+  packed
+  shipped
+  delivered
   failed
   refunded
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  provider      String?
+  role          String    @default("customer")
+  resetTokens   PasswordResetToken[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([provider])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Order {
@@ -68,4 +100,19 @@ model Product {
 
   @@index([category])
   @@index([createdAt])
+}
+
+model WebhookLog {
+  id                String   @id @default(cuid())
+  provider          String
+  eventId           String   @unique
+  eventType         String
+  referenceId       String
+  payload           String
+  status            String   @default("processed")
+  processedAt       DateTime @default(now())
+  
+  @@index([provider])
+  @@index([eventId])
+  @@index([processedAt])
 }

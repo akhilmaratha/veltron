@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Settings, Layout, ShoppingCart, Users } from "lucide-react";
+import { ArrowLeft, Settings, Layout, ShoppingCart, Users, PanelTop, Tags } from "lucide-react";
 
 interface NavigationDrawerProps {
   activeHref?: string;
@@ -10,6 +10,8 @@ const adminNavigation = [
   { label: "Products", href: "/admin/products", icon: Layout },
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Customers", href: "/admin/customers", icon: Users },
+  { label: "Homepage CMS", href: "/admin/content/homepage", icon: PanelTop },
+  { label: "Category CMS", href: "/admin/content/categories", icon: Tags },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ] as const;
 

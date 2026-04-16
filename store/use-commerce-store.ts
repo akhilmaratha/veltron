@@ -1,8 +1,28 @@
 "use client";
 
 import { create } from "zustand";
+import toast from "react-hot-toast";
 import type { CartItemData } from "@/types/commerce";
-import { cartItems, wishlistItems } from "@/lib/commerce-data";
+import { cartItems, homepageProducts, wishlistItems } from "@/lib/commerce-data";
+
+function getItemLabel(itemId: string, state: { cartItems: CartItemData[] }): string {
+  const fromCart = state.cartItems.find((cartItem) => cartItem.id === itemId);
+  if (fromCart) {
+    return fromCart.name;
+  }
+
+  const fromCatalog = homepageProducts.find((product) => product.id === itemId);
+  if (fromCatalog) {
+    return fromCatalog.name;
+  }
+
+  const fromWishlistSeed = wishlistItems.find((item) => item.id === itemId);
+  if (fromWishlistSeed) {
+    return fromWishlistSeed.title;
+  }
+
+  return "Product";
+}
 
 interface CommerceState {
   cartItems: CartItemData[];
@@ -22,6 +42,7 @@ export const useCommerceStore = create<CommerceState>((set, get) => ({
       const existingItem = state.cartItems.find((cartItem) => cartItem.id === item.id);
 
       if (existingItem) {
+        toast.success(`${item.name} quantity updated in cart.`);
         return {
           cartItems: state.cartItems.map((cartItem) =>
             cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem,
@@ -29,12 +50,21 @@ export const useCommerceStore = create<CommerceState>((set, get) => ({
         };
       }
 
+      toast.success(`${item.name} added to cart.`);
       return { cartItems: [...state.cartItems, item] };
     }),
   removeFromCart: (itemId) =>
-    set((state) => ({
-      cartItems: state.cartItems.filter((cartItem) => cartItem.id !== itemId),
-    })),
+    set((state) => {
+      const removedItem = state.cartItems.find((cartItem) => cartItem.id === itemId);
+
+      if (removedItem) {
+        toast.success(`${removedItem.name} removed from cart.`);
+      }
+
+      return {
+        cartItems: state.cartItems.filter((cartItem) => cartItem.id !== itemId),
+      };
+    }),
   updateQuantity: (itemId, quantity) =>
     set((state) => ({
       cartItems: state.cartItems
@@ -46,6 +76,13 @@ export const useCommerceStore = create<CommerceState>((set, get) => ({
   toggleWishlist: (itemId) =>
     set((state) => {
       const isAlreadySaved = state.wishlistIds.includes(itemId);
+      const label = getItemLabel(itemId, state);
+
+      if (isAlreadySaved) {
+        toast.success(`${label} removed from wishlist.`);
+      } else {
+        toast.success(`${label} saved to wishlist.`);
+      }
 
       return {
         wishlistIds: isAlreadySaved

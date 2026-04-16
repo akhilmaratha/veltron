@@ -15,6 +15,7 @@ const seedInventoryItems = [
     id: "inv-01",
     name: "Terra Speaker",
     sku: "VEL-1042",
+    slug: "terra-speaker",
     category: "Audio",
     price: "$320",
     stock: 12,
@@ -25,6 +26,7 @@ const seedInventoryItems = [
     id: "inv-02",
     name: "Halo Lamp",
     sku: "VEL-2011",
+    slug: "halo-lamp",
     category: "Lighting",
     price: "$180",
     stock: 8,
@@ -35,6 +37,7 @@ const seedInventoryItems = [
     id: "inv-03",
     name: "Echo Desk Dock",
     sku: "VEL-3099",
+    slug: "echo-desk-dock",
     category: "Accessories",
     price: "$95",
     stock: 0,
@@ -47,10 +50,39 @@ interface ProductRow {
   id: string;
   name: string;
   sku: string;
+  slug: string;
+  brand?: string | null;
   category: string;
   price: number;
   stock: number;
   image: string;
+  badge?: string | null;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
+  isBestseller?: boolean;
+  rating?: number | null;
+  reviewCount?: number | null;
+  tags?: string[];
+}
+
+interface ProductApiResponse {
+  id?: string;
+  name?: string;
+  sku?: string;
+  slug?: string;
+  brand?: string | null;
+  category?: string;
+  price?: number;
+  stock?: number;
+  image?: string;
+  badge?: string | null;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
+  isBestseller?: boolean;
+  rating?: number | null;
+  reviewCount?: number | null;
+  tags?: string[];
+  message?: string;
 }
 
 interface CloudinarySignatureResponse {
@@ -92,11 +124,21 @@ export default function ProductManagementPage() {
   const [productForm, setProductForm] = useState({
     name: "",
     sku: "",
+    slug: "",
+    brand: "",
     category: "",
     price: "",
     stock: "",
     description: "",
     imageUrl: "",
+    badge: "",
+    rating: "",
+    reviewCount: "",
+    tags: "",
+    galleryImages: "",
+    isFeatured: false,
+    isNewArrival: false,
+    isBestseller: false,
   });
   const previewUrlRef = useRef<string | null>(null);
 
@@ -233,24 +275,31 @@ export default function ProductManagementPage() {
         body: JSON.stringify({
           name: productForm.name,
           sku: productForm.sku,
+            slug: productForm.slug,
+            brand: productForm.brand,
           category: productForm.category,
           price: Number(productForm.price),
           stock: Number(productForm.stock),
           imageUrl: productForm.imageUrl,
           description: productForm.description,
+            badge: productForm.badge,
+            rating: productForm.rating ? Number(productForm.rating) : undefined,
+            reviewCount: productForm.reviewCount ? Number(productForm.reviewCount) : undefined,
+            tags: productForm.tags
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
+            galleryImages: productForm.galleryImages
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
+            isFeatured: productForm.isFeatured,
+            isNewArrival: productForm.isNewArrival,
+            isBestseller: productForm.isBestseller,
         }),
       });
 
-      const payload = (await response.json()) as {
-        id?: string;
-        name?: string;
-        sku?: string;
-        category?: string;
-        price?: number;
-        stock?: number;
-        image?: string;
-        message?: string;
-      };
+      const payload = (await response.json()) as ProductApiResponse;
 
       const productId = payload.id;
       const productPrice = payload.price;
@@ -266,10 +315,19 @@ export default function ProductManagementPage() {
           id: productId,
           name: payload.name ?? "",
           sku: payload.sku ?? "",
+          slug: payload.slug ?? "",
+          brand: payload.brand ?? null,
           category: payload.category ?? "",
           price: productPrice,
           stock: productStock,
           image: productImage,
+          badge: payload.badge ?? null,
+          isFeatured: payload.isFeatured,
+          isNewArrival: payload.isNewArrival,
+          isBestseller: payload.isBestseller,
+          rating: payload.rating ?? null,
+          reviewCount: payload.reviewCount ?? null,
+          tags: payload.tags ?? [],
         },
         ...current,
       ]);
@@ -278,11 +336,21 @@ export default function ProductManagementPage() {
       setProductForm({
         name: "",
         sku: "",
+        slug: "",
+        brand: "",
         category: "",
         price: "",
         stock: "",
         description: "",
         imageUrl: "",
+        badge: "",
+        rating: "",
+        reviewCount: "",
+        tags: "",
+        galleryImages: "",
+        isFeatured: false,
+        isNewArrival: false,
+        isBestseller: false,
       });
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -309,24 +377,24 @@ export default function ProductManagementPage() {
         body: JSON.stringify({
           name: editingData.name,
           sku: editingData.sku,
+                    slug: editingData.slug,
+                    brand: editingData.brand,
           category: editingData.category,
           price: editingData.price,
           stock: editingData.stock,
           imageUrl: editingData.image,
           description: "",
+                    badge: editingData.badge,
+                    rating: editingData.rating ?? undefined,
+                    reviewCount: editingData.reviewCount ?? undefined,
+                    tags: editingData.tags ?? [],
+                    isFeatured: editingData.isFeatured,
+                    isNewArrival: editingData.isNewArrival,
+                    isBestseller: editingData.isBestseller,
         }),
       });
 
-      const payload = (await response.json()) as {
-        id?: string;
-        name?: string;
-        sku?: string;
-        category?: string;
-        price?: number;
-        stock?: number;
-        image?: string;
-        message?: string;
-      };
+      const payload = (await response.json()) as ProductApiResponse;
 
       if (!response.ok) {
         throw new Error(payload.message ?? "Unable to update product.");
@@ -339,10 +407,19 @@ export default function ProductManagementPage() {
                 ...item,
                 name: payload.name ?? item.name,
                 sku: payload.sku ?? item.sku,
+                slug: payload.slug ?? item.slug,
+                brand: payload.brand ?? item.brand,
                 category: payload.category ?? item.category,
                 price: payload.price ?? item.price,
                 stock: payload.stock ?? item.stock,
                 image: payload.image ?? item.image,
+                badge: payload.badge ?? item.badge,
+                isFeatured: payload.isFeatured ?? item.isFeatured,
+                isNewArrival: payload.isNewArrival ?? item.isNewArrival,
+                isBestseller: payload.isBestseller ?? item.isBestseller,
+                rating: payload.rating ?? item.rating,
+                reviewCount: payload.reviewCount ?? item.reviewCount,
+                tags: payload.tags ?? item.tags,
               }
             : item,
         ),
@@ -486,6 +563,20 @@ export default function ProductManagementPage() {
                   className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
                 />
                 <input
+                  name="slug"
+                  value={productForm.slug}
+                  onChange={onProductFieldChange}
+                  placeholder="Slug (optional)"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
+                <input
+                  name="brand"
+                  value={productForm.brand}
+                  onChange={onProductFieldChange}
+                  placeholder="Brand"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
+                <input
                   name="category"
                   value={productForm.category}
                   onChange={onProductFieldChange}
@@ -518,6 +609,33 @@ export default function ProductManagementPage() {
                   placeholder="Image URL (or upload above)"
                   className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
                 />
+                <input
+                  name="badge"
+                  value={productForm.badge}
+                  onChange={onProductFieldChange}
+                  placeholder="Badge label"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
+                <input
+                  name="rating"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={productForm.rating}
+                  onChange={onProductFieldChange}
+                  placeholder="Rating"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
+                <input
+                  name="reviewCount"
+                  type="number"
+                  min="0"
+                  value={productForm.reviewCount}
+                  onChange={onProductFieldChange}
+                  placeholder="Review count"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
               </div>
               <textarea
                 name="description"
@@ -526,6 +644,51 @@ export default function ProductManagementPage() {
                 placeholder="Product description"
                 className="mt-4 min-h-24 w-full rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
               />
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <input
+                  name="tags"
+                  value={productForm.tags}
+                  onChange={onProductFieldChange}
+                  placeholder="Tags, comma separated"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
+                <input
+                  name="galleryImages"
+                  value={productForm.galleryImages}
+                  onChange={onProductFieldChange}
+                  placeholder="Gallery image URLs, comma separated"
+                  className="rounded-md border border-border bg-background px-4 py-3 text-sm outline-none"
+                />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-4 text-sm text-text-primary">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={productForm.isFeatured}
+                    onChange={(event) => setProductForm((current) => ({ ...current, isFeatured: event.target.checked }))}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  Featured
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={productForm.isNewArrival}
+                    onChange={(event) => setProductForm((current) => ({ ...current, isNewArrival: event.target.checked }))}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  New arrival
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={productForm.isBestseller}
+                    onChange={(event) => setProductForm((current) => ({ ...current, isBestseller: event.target.checked }))}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  Bestseller
+                </label>
+              </div>
               <div className="mt-4 flex items-center gap-3">
                 <button
                   type="button"

@@ -50,13 +50,16 @@ export async function POST(request: Request) {
 
     const passwordHash = await hashPassword(parsed.data.password);
 
+    const usersCount = await prisma.user.count();
+    const bootstrapRole = usersCount === 0 ? "admin" : "customer";
+
     const user = await prisma.user.create({
       data: {
         email: parsed.data.email,
         name: parsed.data.name,
         passwordHash,
         provider: "credentials",
-        role: "customer",
+        role: bootstrapRole,
       },
     });
 

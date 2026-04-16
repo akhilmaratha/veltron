@@ -16,8 +16,8 @@ export default function Footer() {
               label: "Products",
               links: [
                 { label: "Homepage", href: "/" },
-                { label: "Product Listing", href: "/product-listing" },
-                { label: "Product Detail", href: "/product-detail" },
+                { label: "Product Listing", href: "/products" },
+                { label: "Product Detail", href: "/products/atlas-wireless-headphones" },
               ],
             },
             {

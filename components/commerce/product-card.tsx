@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Heart, ShoppingCart } from "lucide-react";
 import type { Product } from "@/types/commerce";
 import { useCommerceStore } from "@/store/use-commerce-store";
@@ -17,13 +18,20 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-background shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative aspect-4/5 overflow-hidden bg-surface">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 25vw"
-          className="object-cover transition duration-700 group-hover:scale-105"
-        />
+        <Link href={`/products/${product.slug}`} className="absolute inset-0 block">
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 100vw, 25vw"
+            className="object-cover transition duration-700 group-hover:scale-105"
+          />
+        </Link>
+          {product.badge ? (
+            <span className="absolute left-4 top-4 rounded-md bg-text-primary/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-background">
+              {product.badge}
+            </span>
+          ) : null}
         <button
           type="button"
           aria-label="Toggle wishlist"
@@ -34,11 +42,21 @@ export default function ProductCard({ product }: ProductCardProps) {
         </button>
       </div>
       <div className="flex flex-1 flex-col p-5">
+        {product.brand ? <p className="text-[10px] uppercase tracking-[0.22em] text-text-muted">{product.brand}</p> : null}
         <p className="text-[10px] uppercase tracking-[0.22em] text-text-muted">{product.category}</p>
-        <h3 className="mt-3 font-heading text-xl text-text-primary">{product.name}</h3>
-        <p className="mt-2 text-sm leading-6 text-text-muted">{product.description}</p>
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <span className="font-heading text-xl text-primary">${product.price.toFixed(2)}</span>
+        <h3 className="mt-3 font-heading text-xl text-text-primary">
+          <Link href={`/products/${product.slug}`} className="transition hover:text-primary">
+            {product.name}
+          </Link>
+        </h3>
+        <p className="mt-2 min-h-20 text-sm leading-6 text-text-muted">{product.description}</p>
+        {product.rating ? (
+          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-text-muted">
+            {product.rating.toFixed(1)} rating{product.reviewCount ? ` · ${product.reviewCount} reviews` : ""}
+          </p>
+        ) : null}
+        <div className="mt-auto flex items-center justify-between gap-4 pt-6">
+          <span className="whitespace-nowrap font-heading text-xl text-primary">${product.price.toFixed(2)}</span>
           <button
             type="button"
             onClick={() =>
@@ -51,7 +69,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 image: product.image,
               })
             }
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-background transition hover:bg-primary/90"
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-background transition hover:bg-primary/90"
           >
             <ShoppingCart className="h-4 w-4" />
             Add to Cart

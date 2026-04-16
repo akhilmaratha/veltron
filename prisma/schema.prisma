@@ -90,16 +90,27 @@ model Product {
   id          String   @id @default(cuid())
   name        String
   sku         String   @unique
+  slug        String   @unique
+  brand       String?
   category    String
   priceCents  Int
   stock       Int
   imageUrl    String
   description String
+  badge       String?
+  isFeatured  Boolean  @default(false)
+  isNewArrival Boolean @default(false)
+  isBestseller Boolean @default(false)
+  rating      Float?
+  reviewCount Int?
+  tags        String[] @default([])
+  galleryImages String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([category])
   @@index([createdAt])
+  @@index([slug])
 }
 
 model WebhookLog {
@@ -115,4 +126,37 @@ model WebhookLog {
   @@index([provider])
   @@index([eventId])
   @@index([processedAt])
+}
+
+model HeroSlide {
+  id          String   @id @default(cuid())
+  eyebrow     String
+  title       String
+  description String
+  ctaLabel    String
+  ctaUrl      String
+  imageUrl    String
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@index([startsAt, endsAt])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  imageUrl    String
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }

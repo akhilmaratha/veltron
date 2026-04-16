@@ -8,18 +8,17 @@ const protectedRoutes = [
   "/wishlist",
   "/user-profile",
   "/coupons",
-  "/admin-dashboard",
-  "/order-management",
-  "/product-management",
+  "/admin",
 ];
 
-const adminRoutes = ["/admin-dashboard", "/order-management", "/product-management"];
-const authPages = ["/login", "/signup"];
+const adminRoutes = ["/admin"];
+const authPages = ["/login", "/signup", "/admin/signin"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
-  const isAdmin = adminRoutes.some((route) => pathname.startsWith(route));
+  const isAdmin =
+    adminRoutes.some((route) => pathname.startsWith(route)) && !pathname.startsWith("/admin/signin");
   const isAuthPage = authPages.some((route) => pathname.startsWith(route));
 
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -31,10 +30,16 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAdmin && token?.role !== "admin") {
-    return NextResponse.redirect(new URL("/", request.url));
+    const url = new URL("/admin/signin", request.url);
+    url.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(url);
   }
 
   if (isAuthPage && token) {
+    if (pathname.startsWith("/admin/signin")) {
+      return NextResponse.redirect(new URL(token.role === "admin" ? "/admin" : "/", request.url));
+    }
+
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -45,13 +50,12 @@ export const config = {
   matcher: [
     "/login",
     "/signup",
+    "/admin/:path*",
+    "/admin/signin",
     "/checkout/:path*",
     "/shopping-cart/:path*",
     "/wishlist/:path*",
     "/user-profile/:path*",
     "/coupons/:path*",
-    "/admin-dashboard/:path*",
-    "/order-management/:path*",
-    "/product-management/:path*",
   ],
 };

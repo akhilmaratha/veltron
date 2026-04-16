@@ -11,12 +11,21 @@ export interface NavItem {
 
 export interface Product {
   id: string;
+  slug: string;
   name: string;
   category: string;
+  categoryKey: string;
   price: number;
   image: string;
   description: string;
+  brand?: string;
   badge?: string;
+  rating?: number;
+  reviewCount?: number;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
+  isBestseller?: boolean;
+  tags?: string[];
 }
 
 export interface StatCardData {

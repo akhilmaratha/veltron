@@ -12,9 +12,13 @@ const baseProviders: NextAuthOptions["providers"] = [
     credentials: {
       email: { label: "Email", type: "email" },
       password: { label: "Password", type: "password" },
+      loginMode: { label: "Login Mode", type: "text" },
     },
     async authorize(credentials) {
-      const parsed = loginSchema.safeParse(credentials);
+      const parsed = loginSchema.safeParse({
+        email: credentials?.email,
+        password: credentials?.password,
+      });
 
       if (!parsed.success) {
         return null;
@@ -31,6 +35,12 @@ const baseProviders: NextAuthOptions["providers"] = [
       const isPasswordValid = await verifyPassword(parsed.data.password, user.passwordHash);
 
       if (!isPasswordValid) {
+        return null;
+      }
+
+      const isAdminLogin = credentials?.loginMode === "admin";
+
+      if (isAdminLogin && user.role !== "admin") {
         return null;
       }
 
@@ -56,12 +66,15 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         });
 
         if (!user) {
+          const usersCount = await prisma.user.count();
+          const bootstrapRole = usersCount === 0 ? "admin" : "customer";
+
           const newUser = await prisma.user.create({
             data: {
               email,
               name: profile.name ?? profile.email ?? undefined,
               provider: "google",
-              role: "customer",
+              role: bootstrapRole,
             },
           });
 
@@ -69,7 +82,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             id: newUser.id,
             name: newUser.name,
             email: newUser.email,
-            role: "customer" as const,
+            role: (newUser.role === "admin" ? "admin" : "customer") as "admin" | "customer",
           };
         }
 
